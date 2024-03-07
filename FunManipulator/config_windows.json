@@ -2,7 +2,7 @@
   "RNG15Bit": true,
   "RNGOldPoly": false,
   "RNGSigned": false,
-  "LogProgress": false,
+  "LogProgress": true,
 
   "FunManip": {
     "ForceFunMinimum": -1,
@@ -13,7 +13,7 @@
   },
   "SeedFinder": {
     "Seed": -1,
-    "SearchRange": 5000000,
+    "SearchRange": 500000, // using for testing 36364430108253614000
     "SearchRangeFind": 1000000,
     "InputMode": "None",
     "DefaultDustID": 0,
@@ -58,5 +58,5 @@
   "WindowScale": 2,
   "WindowTransparent": true,
 
-  "Program": "seedfinder"
+  "Program": "testing"
 }

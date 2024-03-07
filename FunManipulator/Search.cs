@@ -47,10 +47,10 @@ public static partial class Search
                     int currIndex = i;
                     foreach (var elem in Elements)
                     {
+                        currIndex &= 0xff;
                         if (!elem.Check(rng, ref currIndex))
                         {
-                            if (++errors > AllowedErrors)
-                                break;
+                            return -1;
                         }
                     }
                     if (errors <= AllowedErrors)
@@ -388,6 +388,7 @@ public static partial class Search
         bool foundSeed = false;
         bool foundExtraSeeds = false;
 
+        Console.Write($"Pattern size: {pattern.GetSize()}\n");
         bool logProgress = Config.Instance.LogProgress;
         if (logProgress)
             Console.Write("Seed search progress: 0%");
@@ -400,7 +401,7 @@ public static partial class Search
         int counter = 0;
         Parallel.ForEach(rangePartitioner, new ParallelOptions { MaxDegreeOfParallelism = Parallelism }, range =>
         {
-            uint[] simulated = new uint[searchSize];
+            uint[] simulated = new uint[256];
             RNG rng = new();
             for (int ind = range.Item1; ind < range.Item2; ind++)
             {
@@ -413,16 +414,27 @@ public static partial class Search
                     rng.Next();
 
                 // Now simulate the results we want
-                for (int i = 0; i < searchSize; i++)
-                    simulated[i] = rng.Next();
+                int patternIndex = -1;
+                for (int i = 0; i < pattern.GetSize(); i++)
+                {
+                    simulated[i & 0xff] = rng.Next();
+                }
+                for (int i = pattern.GetSize(); i < searchSize; i++)
+                {
+                    simulated[i & 0xff] = rng.Next();
+                    // Search the simulated results for our pattern
+                    if (pattern.CheckFirst(simulated, i & 0xff, pattern.GetSize()) != -1) {
+                        patternIndex = i;
+                        break;
+                    }
+                }
 
-                // Search the simulated results for our pattern
-                int patternIndex = pattern.CheckFirst(simulated, 0, simulated.Length);
                 if (patternIndex != -1)
                 {
                     lock (_lock)
                     {
                         seedList?.Add((seed, patternIndex));
+                        Console.Write($"\nFound: {seed} at {patternIndex}\n");
                         if (!foundSeed)
                         {
                             // This is the first seed found
@@ -444,7 +456,7 @@ public static partial class Search
                     lock (_counterLock)
                     {
                         counter++;
-                        Console.Write($"\rSeed search progress: {((float)counter / RNG.UniqueSeeds.Length) * 100:N2}%");
+                        Console.Write($"\rSeed search progress: {((float)counter / RNG.UniqueSeeds.Length) * 100:N4}%");
                     }
                 }
             }
